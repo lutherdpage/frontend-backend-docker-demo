@@ -1,0 +1,11 @@
+<script>
+    window.onload = async () => {
+        try {
+            const res = await fetch('http://host.docker.internal:3000/');
+            const text = await res.text();
+            document.getElementById('message').innerText = text;
+        } catch (err) {
+            console.error('Error fetching backend:', err);
+        }
+    };
+</script>

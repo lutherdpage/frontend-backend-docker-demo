@@ -1,0 +1,32 @@
+#! frontend-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: frontend
+    namespace: infrastructure-as-code-cloud-scale-project
+    labels:
+        com.docker.compose.project: infrastructure-as-code-cloud-scale-project
+        com.docker.compose.service: frontend
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: infrastructure-as-code-cloud-scale-project
+            com.docker.compose.service: frontend
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: infrastructure-as-code-cloud-scale-project
+                com.docker.compose.service: frontend
+                com.docker.compose.network.app-network: "true"
+        spec:
+            containers:
+                - name: frontend-container
+                  image: infrastructure-as-code-cloud-scale-project-frontend
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                    - name: frontend-80
+                      containerPort: 80
