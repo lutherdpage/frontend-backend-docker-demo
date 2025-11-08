@@ -1,0 +1,175 @@
+🐳 1. "Site can’t be reached" or Frontend doesn’t load
+
+Cause:
+The frontend container may not be running, or the port is not correctly mapped.
+
+Fix:
+
+docker ps
+
+
+Check if the container is listed. You should see:
+
+frontend-container   ...   0.0.0.0:8080->80/tcp
+
+
+If not, start it manually:
+
+docker start frontend-container
+
+
+If that fails, rebuild it:
+
+docker rm -f frontend-container
+docker build -t frontend:latest ./frontend
+docker run -d -p 8080:80 --name frontend-container --network app-network frontend:latest
+
+
+Then, visit:
+👉 http://localhost:8080
+
+🔌 2. “Failed to load backend message.” when clicking “Fetch”
+
+Cause:
+The frontend cannot reach the backend container.
+
+Fix:
+
+Ensure the backend container is running:
+
+docker ps
+
+
+You should see:
+
+backend-container   ...   3000/tcp
+
+
+Verify both containers share the same Docker network:
+
+docker network inspect app-network
+
+
+You should see both containers under "Containers".
+
+If one is missing, reconnect it:
+
+docker network connect app-network backend-container
+docker network connect app-network frontend-container
+
+
+If still failing, rebuild both containers:
+
+docker rm -f backend-container frontend-container
+docker build -t backend:latest ./backend
+docker build -t frontend:latest ./frontend
+docker run -d --name backend-container --network app-network -p 3000:3000 backend:latest
+docker run -d --name frontend-container --network app-network -p 8080:80 frontend:latest
+
+⚙️ 3. “Error: Conflict. The container name ... is already in use”
+
+Cause:
+You tried to start a new container with a name that already exists.
+
+Fix:
+Remove the old container first:
+
+docker rm -f frontend-container backend-container
+
+
+Then rerun your build and run commands.
+
+🌐 4. Frontend Fetch Works Locally but Not in Browser
+
+Cause:
+The frontend HTML is using an internal Docker hostname (backend-container) that browsers outside the container can’t resolve.
+
+Fix Options:
+
+Option A (Recommended):
+Use Docker Compose to manage both services:
+
+docker-compose up --build
+
+
+This ensures the services share a network and use service names automatically.
+
+Option B:
+Change the fetch URL in index.html temporarily for local testing:
+
+const res = await fetch('http://localhost:3000/');
+
+🧱 5. “Network already exists” Error
+
+Cause:
+You attempted to recreate an existing Docker network.
+
+Fix:
+List all networks:
+
+docker network ls
+
+
+Then remove or reuse the existing one:
+
+docker network rm app-network
+docker network create app-network
+
+🪵 6. Logs Don’t Show Anything
+
+Cause:
+You’re not tailing logs correctly.
+
+Fix:
+To monitor logs:
+
+docker logs -f backend-container
+docker logs -f frontend-container
+
+
+If you don’t see “Backend running…” in logs, the app didn’t start properly — rebuild the backend image.
+
+🧩 7. Backend Not Responding on Port 3000
+
+Fix:
+Check if backend is listening:
+
+docker exec -it backend-container curl http://localhost:3000
+
+
+If you see Hello from Backend!, it’s running fine.
+
+If not, rebuild it:
+
+docker build -t backend:latest ./backend
+docker rm -f backend-container
+docker run -d --name backend-container --network app-network -p 3000:3000 backend:latest
+
+🔄 8. Need to Start Fresh
+
+When all else fails, reset the environment:
+
+docker rm -f $(docker ps -aq)
+docker network rm app-network
+docker system prune -af
+docker network create app-network
+docker-compose up --build
+
+✅ 9. Verify Everything Works
+
+Once containers are rebuilt and running:
+
+docker ps
+
+
+You should see both containers:
+
+frontend-container   ...   0.0.0.0:8080->80/tcp
+backend-container    ...   3000/tcp
+
+
+Then visit:
+👉 http://localhost:8080
+
+Click “Fetch Backend Message” → should show:
+“Hello from Backend!”
